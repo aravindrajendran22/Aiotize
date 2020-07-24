@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<title>Aiotize Viz</title>
+<meta charset="utf-8">
+<style> /* set the CSS */
+
+body { 
+    background-color: lightgray;
+    font: 12px Arial;}
+h1 {
+  background-color: black;
+  color: rgb(190, 184, 184);
+}
+svg{
+    margin-left: 40vw;
+}
+path { 
+    stroke: steelblue;
+    stroke-width: 2;
+    fill: none;
+}
+.tooltip
+          {
+              position: absolute;
+              background:silver;
+              color:rgb(139, 122, 122);
+              font-size: 25px;
+              padding:5px;
+          }
+.line{
+    position: fixed;
+    top:15vh;
+    right:2.5vw;
+    width:53vw;
+    height:0vh;
+    background-color: rgb(246, 255, 122);
+    opacity : 0.5;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: grey;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+</style>
+<body>
+    <h1>Live dashboard: Seal Intactness</h1>
+   <div class = 'line'></div>
+   <input class = 'numip' type = 'number'/>
+
+<!-- load the d3.js library -->    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+
+<script>
+var line = document.querySelector('.line');
+var inp = document.querySelector('.numip');
+inp.addEventListener('change', (event) => {
+    val = event.target.value 
+    if(val < 0 ){
+        alert('Cant be negative');
+        event.target.value = 0;
+        return 
+    }
+    line.style.height = String(val * 3)+'vh'
+})
+
+// Set the dimensions of the canvas / graph
+var margin = {top: 40, right: 20, bottom: 50, left: 50},
+    width = 700 - margin.left - margin.right,
+    height = 320 - margin.top - margin.bottom;
+//change the width and dimensions
+// Parse the date / time
+var parseDate = d3.time.format("%d-%b-%y").parse;
+
+// Set the ranges
+//var x = d3.time.scale().range([0, width]);
+var x = d3.scale.linear().range([0, width]);
+var y = d3.scale.linear().range([height, 0]);
+
+// Define the axes
+var xAxis = d3.svg.axis().scale(x)
+    .orient("bottom").ticks(20)
+    .tickSize(8)
+    .tickPadding(10);
+
+var yAxis = d3.svg.axis().scale(y)
+    .orient("left").ticks(10)
+    .tickSize(8)
+    .tickPadding(8);
+
+// Define the line
+var valueline = d3.svg.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.close); });
+    
+  
+// Adds the svg canvas
+var svg = d3.select("body")
+    .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .style("background", "#e0e0d1")
+    .append("g")
+        .attr("transform", 
+              "translate(" + margin.left + "," + margin.top + ")");
+              
+
+// Get the data
+d3.csv("mockup.csv", function(data) {
+    data.forEach(function(d) {
+        d.Number = +d.Number;
+        d.Confidence = +d.Confidence;
+    });
+
+    // Scale the range of the data
+    x.domain(d3.extent(data, function(d) { return d.Number; }));
+    y.domain([0, d3.max(data, function(d) { return d.Confidence; })]);
+
+    // Add the valueline path.
+    svg.append("path")
+        .attr("class", "line")
+        //.attr("d", valueline(data));
+
+    // Add the scatterplot
+    svg.selectAll("dot")
+        .data(data)
+      .enter().append("circle")
+      .style("fill", d => { if (d.Sealintact=="FALSE") return  "#cc0000"; else return "#006600" })
+        .attr("r", 4)
+        //.attr("color", red)
+        .attr("cx", function(d) { return x(d.Number); })
+        .attr("cy", function(d) { return y(d.Confidence); });
+
+    // Add the X Axis
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+        svg.append("text")      // text label for the x axis
+        .attr("x", 300 )
+        .attr("y",  275 )
+        .style("text-anchor", "middle")
+        .text("Number").call(xAxis);
+
+    // Add the Y Axis
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis); 
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Confidence level").call(yAxis);  
+});
+
+</script>
+</body>
